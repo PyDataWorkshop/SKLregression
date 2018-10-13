@@ -1,0 +1,140 @@
+\documentclass[SKL-MASTER.tex]{subfiles}
+\begin{document}
+\section{Using sparsity to regularize models}
+\begin{itemize}
+\item The least absolute shrinkage and selection operator (LASSO) method is very similar
+to ridge regression and LARS. 
+\item It's similar to Ridge Regression in the sense that we penalize
+our regression by some amount, and it's similar to LARS in that it can be used as a parameter
+selection, and it typically leads to a sparse vector of coefficients.
+\end{itemize}
+
+\subsubsection{Getting ready}
+To be clear, lasso regression is not a panacea. There can be computation consequences to
+using lasso regression. As we'll see in this recipe, we'll use a loss function that isn't differential,
+and therefore, requires special, and more importantly, performance-impairing workarounds.
+\subsection{Implementation}
+Let's go back to the trusty \texttt{make\_regression} function and create a dataset with the same
+parameters:
+\begin{framed}
+	\begin{verbatim}
+>>> from sklearn.datasets import make_regression
+>>> reg_data, reg_target = make_regression(n_samples=200, n_features=500,
+n_informative=5, noise=5)
+\end{verbatim}
+\end{framed}
+Next, we need to import the Lasso object:
+\begin{framed}
+\begin{verbatim}
+>>> from sklearn.linear_model import Lasso
+>>> lasso = Lasso()
+\end{verbatim}
+\end{framed}
+\subsection{Parameters for LASSO : alpha}
+\begin{itemize}
+\item Lasso contains many parameters, but the most interesting parameter is alpha. It scales
+the penalization term of the Lasso method, which we'll look at later.
+\item For now, leave it as 1.
+\item As an aside, and much like ridge regression, if this term is 0, lasso is
+equivalent to linear regression:
+\end{itemize}
+
+\begin{framed}
+	\begin{verbatim}
+>>> lasso.fit(reg_data, reg_target)
+\end{verbatim}
+\end{framed}
+Again, let's see how many of the coefficients remain nonzero:
+\begin{framed}
+\begin{verbatim}
+>>> np.sum(lasso.coef_ != 0)
+9
+>>> lasso_0 = Lasso(0)
+>>> lasso_0.fit(reg_data, reg_target)
+>>> np.sum(lasso_0.coef_ != 0)
+500
+\end{verbatim}
+\end{framed}
+%========================================================%
+\begin{itemize}
+\item None of our coefficients turn out to be 0, which is what we expect. 
+\item Actually, if you run this, you
+might get a warning from scikit-learn that advises you to choose LinearRegression.
+\end{itemize}
+
+
+%How it works...
+%For linear regression, we minimized the squared error. Here, we're still going to minimize the
+%squared error, but we'll add a penalization term that will induce the scarcity. The equation
+%looks like the following:
+%i 1 e + 
+%An alternate way of looking at this is to minimize the residual sum of squares:
+%( ) 1 RSS  such that  < 
+%This constraint is what leads to the scarcity. Lasso regression's constraint creates a hypercube
+%around the origin (the coefficients being the axis), which means that the most extreme points
+%are the corners, where many of the coefficients are 0. Ridge regression creates a hypersphere
+%due to the constraint of the l2 norm being less than some constant, but it's very likely that
+%coefficients will not be zero even if they are constrained.
+%================================================= %
+\newpage
+\subsection{Lasso cross-validation}
+Choosing the most appropriate lambda is a critical problem. We can specify the lambda
+ourselves or use cross-validation to find the best choice given the data at hand:
+\begin{framed}
+\begin{verbatim}
+>>> from sklearn.linear_model import LassoCV
+>>> lassocv = LassoCV()
+>>> lassocv.fit(reg_data, reg_target)
+\end{verbatim}
+\end{framed}
+\begin{itemize}
+\item \texttt{lassocv} will have, as an attribute, the most appropriate lambda. 
+\item \textbf{Remark:} scikit-learn mostly uses
+alpha in its notation, but the literature uses lambda:
+\end{itemize}
+\begin{framed}
+\begin{verbatim}
+>>> lassocv.alpha_
+0.80722126078646139
+\end{verbatim}
+\end{framed}
+The number of coefficients can be accessed in the regular manner:
+\begin{framed}
+	\begin{verbatim}
+>>> lassocv.coef_[:5]
+array([0., 42.41, 0.,0., -0.])
+\end{verbatim}
+\end{framed}
+%========================================================%
+%Working with Linear Models
+%72
+Letting \texttt{lassocv} choose the appropriate best fit leaves us with 11 nonzero coefficients:
+
+\begin{framed}
+\begin{verbatim}
+>>> np.sum(lassocv.coef_ != 0)
+11
+\end{verbatim}
+\end{framed}
+
+
+\subsubsection{Lasso for feature selection}
+\begin{itemize}
+\item Lasso can often be used for feature selection for other methods. 
+\item For example, you might run
+lasso regression to get the appropriate number of features, and then use these features in
+another algorithm.
+\item To get the features we want, create a masking array based on the columns that aren't zero,
+and then filter to keep the features we want:
+\end{itemize}
+
+\begin{framed}
+	\begin{verbatim}
+	>>> mask = lassocv.coef_ != 0
+	>>> new_reg_data = reg_data[:, mask]
+	>>> new_reg_data.shape
+	(200, 11)
+	\end{verbatim}
+\end{framed}
+
+\end{document}

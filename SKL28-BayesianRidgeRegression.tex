@@ -1,0 +1,54 @@
+Directly applying Bayesian ridge regression
+In the Using ridge regression to overcome linear regression's shortfalls recipe, we discussed
+the connections between the constraints imposed by ridge regression from an optimization
+standpoint. We also discussed the Bayesian interpretation of priors on the coefficients, which
+attract the mass of the density towards the prior, which often has a mean of 0.
+So, now we'll look at how we can directly apply this interpretation though scikit-learn.
+\subsubsection{Getting ready}
+Ridge and lasso regression can both be understood through a Bayesian lens as opposed to
+an optimization lens. Only Bayesian ridge regression is implemented by scikit-learn, but in the
+How it works... section, we'll look at both cases.
+First, as usual, let's create some regression data:
+>>> from sklearn.datasets import make_regression
+>>> X, y = make_regression(1000, 10, n_informative=2, noise=20)
+How to do it...
+We can just "throw" ridge regression at the problem with a few simple steps:
+>>> from sklearn.linear_model import BayesianRidge
+>>> br = BayesianRidge()
+The two sets of coefficients of interest are alpha_1/alpha_2 and lambda_1/lambda_2.
+The alphas are the hyperparameters for the prior over the alpha parameter, and the lambda
+are the hyperparameters of the prior over the lambda parameter.
+%========================================================%
+Working with Linear Models
+80
+First, let's fit a model without any modification to the hyperparameters:
+>>> br.fit(X, y)
+>>> br.coef_
+array([0.3000136 , -0.33023408, 68.166673, -0.63228159, 0.07350987,
+-0.90736606, 0.38851709, -0.8085291 , 0.97259451, 68.73538646])
+Now, if we modify the hyperparameters, notice the slight changes in the coefficients:
+>>> br_alphas = BayesianRidge(alpha_1=10, lambda_1=10)
+>>> br_alphas.fit(X, y)
+>>> br_alphas.coef_
+array([0.30054387, -0.33130025, 68.10432626, -0.63056712,
+0.07751436, -0.90919326, 0.39020878, -0.80822013,
+0.97497567, 68.67409658])
+How it works...
+For Bayesian ridge regression, we assume a prior over the errors and alpha. Both these priors
+are gamma distributions.
+The gamma distribution is a very flexible distribution. Here are some of the different shapes
+the gamma distribution can take given the different parameterization techniques for location
+and scale. 1e-06 is the default parameterization of BayesianRidge in scikit-learn:
+%========================================================%
+Chapter 2
+81
+As you can see, the coefficients are naturally shrunk towards 0, especially with a very small
+location parameter.
+There's more...
+Like I mentioned earlier, there's also a Bayesian interpretation of lasso regression. Imagine
+we set priors over the coefficients; remember that they are random numbers themselves.
+For lasso regression, we will choose a prior that naturally produces 0s, for example, the
+double exponential.
+Notice the peak around 0. This will naturally lead to the zero coefficients in lasso regression.
+By tuning the hyperparameters, it's also possible to create 0 coefficients that more or less
+depend on the setup of the problem.

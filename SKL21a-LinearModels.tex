@@ -1,0 +1,57 @@
+\documentclass[SKL-MASTER.tex]{subfiles}
+\begin{document}
+	\Large
+
+% % 2.2. Linear model: from regression to sparsity
+
+\subsection*{Diabetes dataset}
+
+The diabetes dataset consists of 10 physiological variables (age, sex, weight, blood pressure) measure on 442 patients, and an indication of disease progression after one year:
+
+\begin{framed}
+\begin{verbatim}
+>>> diabetes = datasets.load_diabetes()
+>>> diabetes_X_train = diabetes.data[:-20]
+>>> diabetes_X_test  = diabetes.data[-20:]
+>>> diabetes_y_train = diabetes.target[:-20]
+>>> diabetes_y_test  = diabetes.target[-20:]
+\end{verbatim}
+\end{framed}
+The task  is to predict disease prediction from physiological variables.
+
+% % 2.2.1. Linear regression
+\subsection*{ Linear Regression }
+% _images/plot_ols_1.png
+\[ \mbox{Linear models:   } \mathbf{y} = \mathbf{X\beta} + \epsilon \]
+
+\begin{itemize}
+\item X: data
+\item y: target variable
+\item $\beta$: Coefficients
+\item $\epsilon$: Observation noise
+\end{itemize}
+
+%------------------------------------------------ %
+\begin{framed}
+\begin{verbatim}
+>>> from scikits.learn import linear_model
+>>> regr = linear_model.LinearRegression()
+>>> regr.fit(diabetes_X_train, diabetes_y_train)
+LinearRegression(fit_intercept=True)
+>>> print regr.coef_
+
+[  3.03499549e-01  -2.37639315e+02   5.10530605e+02   3.27736980e+02
+  -8.14131709e+02   4.92814588e+02   1.02848452e+02   1.84606489e+02
+   7.43519617e+02   7.60951722e+01]
+
+>>> # The mean square error
+>>> np.mean((regr.predict(diabetes_X_test) - diabetes_y_test)**2)
+2004.5676026898223
+
+>>> # Explained variance score: 1 is perfect prediction
+>>> regr.score(diabetes_X_test, diabetes_y_test)
+0.58507530226905713
+\end{verbatim}
+\end{framed}
+
+\end{document}

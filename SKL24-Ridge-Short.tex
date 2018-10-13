@@ -1,0 +1,317 @@
+\documentclass[SKL-MASTER.tex]{subfiles}
+
+\begin{document}
+\Large
+\section*{Using Ridge Regression}
+
+In this section, we'll learn about ridge regression, and how to use it to overcome linear
+regression's shortfalls.
+
+\begin{framed}
+\noindent Ridge Regression is different from classical OLS linear regression;
+by introducing \textbf{\textit{regularization parameter}} to "\textit{shrink}" the coefficients. 
+\end{framed}
+
+This is useful when the dataset has collinear factors.
+
+\begin{framed}
+\textbf{What is Multicollinearity?}\\
+\noindent multicollinearity (also collinearity) is a phenomenon in which two or more predictor variables in a multiple regression model are highly correlated, meaning that one can be linearly predicted from the others with a substantial degree of accuracy
+ 
+\noindent Severe multicollinearity is a problem because it can increase the variance of the coefficient estimates and make the estimates very sensitive to minor changes in the model. The result is that the coefficient estimates are unstable and difficult to interpret. 
+
+Multicollinearity saps the statistical power of the analysis, can cause the coefficients to switch signs, and makes it more difficult to specify the correct model.
+\end{framed}
+\newpage
+
+\subsection*{Getting ready}
+\begin{itemize}
+\item Let's load a dataset that has a low effective rank and compare ridge regression with linear
+regression by way of the coefficients. 
+\item If you're not familiar with \textbf{\textit{rank}}, it's the smaller of the
+linearly independent columns and the linearly independent rows. 
+\item One of the assumptions
+of OLS linear regression is that the data matrix is of ``full rank".
+\end{itemize}
+
+\subsection*{Implementation} % How to do it...
+First, use \texttt{make\_regression} to create a simple dataset with three predictors, but an
+effective rank of 2. Effective rank means that while technically the matrix is of full rank,
+many of the columns have a high degree of colinearity:
+\begin{framed}
+\begin{verbatim}
+>>> from sklearn.datasets import make_regression
+>>> reg_data, reg_target = make_regression(
+n_samples=2000,
+n_features=3, effective_rank=2, noise=10)
+\end{verbatim}
+\end{framed}
+\newpage
+
+First, let's take a look at regular linear regression:
+
+	\begin{verbatim}
+ import numpy as np
+ n_bootstraps = 1000
+ 
+ len_data = len(reg_data)
+ subsamp_n = np.int(0.75*len_data)
+ subsamp = lambda: np.random.choice(np.arange(0, len_data), size=subsamp_n)
+ coefs = np.ones((n_bootstraps, 3))
+ for i in range(n_bootstraps):
+     subsamp_idx = subsamp()
+     subsamp_X = reg_data[subsamp_idx]
+     subsamp_y = reg_target[subsamp_idx]
+     lr.fit(subsamp_X, subsamp_y)
+     
+ coefs[i][0] = lr.coef_[0]
+ coefs[i][1] = lr.coef_[1]
+ coefs[i][2] = lr.coef_[2]
+\end{verbatim}
+
+
+%========================================================%
+% % Working with Linear Models
+% % 64
+
+The following is the output that gets generated:
+
+
+Follow the same procedure with Ridge, and have a look at the output:
+\begin{framed}
+\begin{verbatim}
+>>> r = Ridge()
+>>> n_bootstraps = 1000
+>>> len_data = len(reg_data)
+>>> subsample_size = np.int(0.75*len_data)
+>>> subsample = lambda: np.random.choice(np.arange(0,      len_data),
+size=subsample_size)
+coefs_r = np.ones((n_bootstraps, 3))
+# carry out the same procedure from above
+\end{verbatim}
+\end{framed}
+%========================================================%
+% % Chapter 2
+% % 65
+The following is the output that gets generated:
+Don't let the similar width of the plots fool you; the coefficients for ridge regression are much
+closer to 0. Let's look at the average spread between the coefficients:
+\begin{framed}
+	\begin{verbatim}
+	>>> np.mean(coefs - coefs_r, axis=0)
+#coefs_r stores the ridge regression coefficients
+array([ 22.19529525, 49.54961002, 8.27708536])
+\end{verbatim}
+\end{framed}
+So, on an average, the coefficients for linear regression are much higher than the ridge
+regression coefficients. This difference is the bias in the coefficients (forgetting, for a second,
+the potential bias of the linear regression coefficients). So then, what is the advantage of ridge
+regression? Well, let's look at the variance of our coefficients:
+\begin{framed}
+	\begin{verbatim}
+>>> np.var(coefs, axis=0)
+array([ 184.50845658, 150.16268077, 263.39096391])
+>>> np.var(coefs_r, axis=0)
+array([ 21.35161646, 23.95273241, 17.34020101])
+\end{verbatim}
+\end{framed}
+
+\subsection*{Bias-Variance Trade Off}
+The variance has been dramatically reduced. This is the \textbf{\textit{bias-variance trade-off}} that is
+so often discussed in machine learning. 
+
+
+The next section will introduce how to tune the
+regularization parameter in ridge regression, which is at the heart of this trade-off.
+%========================================================%
+% % Working with Linear Models
+% % 66
+\subsection{Theoretical Background}
+%Speaking of the regularization parameter, let's go through how ridge regression differs from
+%linear regression. As was already shown, linear regression works, but it finds the vector of
+%betas that minimize yˆ − X 2 .
+%
+%Ridge regression finds the vector of betas that minimize 2 2 yˆ − X + X .
+%is typically , or it's some scalar times the identity matrix. We actually used the default
+%alpha when initializing ridge regression.
+%Now that we created the object, we can look at its attributes:
+%
+%>>> r #notice the alpha parameter
+%Ridge(alpha=1.0, copy_X=True, fit_intercept=True, max_iter=None,
+%normalize=False, solver='auto', tol=0.001)
+%This minimization has the following solution:
+%( )  X T X T 1 Xy − = +  
+%
+%The previous solution is the same as linear regression, except for the term. For a matrix A,
+%is symmetric, and thus positive semidefinite. So, thinking about the translation of matrix
+%algebra from scalar algebra, we effectively divide by a larger number. Multiplication by an
+%inverse is analogous to division. So, this is what squeezes the coefficients towards 0. This is
+%a bit of a crude explanation; for a deeper understanding, you should look at the connections
+%between SVD and ridge regression.
+%\newpage
+\newpage
+\section*{Optimizing the ridge regression parameter}
+\begin{itemize}
+\item Once you start using ridge regression to make predictions or learn about relationships in the
+system you're modeling, you'll start thinking about the choice of alpha.
+\item For example, using OLS regression might show some relationship between two variables;
+however, when regularized by some alpha, the relationship is no longer significant. 
+\item This can
+be a matter of whether a decision needs to be taken.
+\end{itemize}
+
+\subsection*{Getting ready}
+This is the first recipe where we'll tune the parameters for a model. This is typically done by
+cross-validation. There will be recipes laying out a more general way to do this in later recipes,
+but here we'll walkthrough to be able to tune ridge regression.
+%========================================================%
+% % Chapter 2
+% % 67
+If you remember, in ridge regression, the gamma parameter is typically represented as alpha
+in scikit-learn when calling RidgeRegression; so, the question that arises is what the best
+alpha is. Create a regression dataset, and then let's get started:
+\begin{framed}
+	\begin{verbatim}
+>>> from sklearn.datasets import make_regression
+>>> reg_data, reg_target = make_regression(n_samples=100,
+n_features=2, effective_rank=1, noise=10)
+\end{verbatim}
+\end{framed}
+\subsection*{Implementation}
+\begin{itemize}
+\item In the \texttt{linear\_models} module, there is an object called \texttt{RidgeCV}, which stands
+for ridge cross-validation. 
+\item This performs a cross-validation similar to \textbf{\textit{leave-one-out
+		cross-validation (LOOCV)}}.
+\item Under the hood, it's going to train the model for all samples except one.
+\end{itemize}
+ It'll then
+evaluate the error in predicting this one test case:
+\begin{framed}
+\begin{verbatim}
+>>> from sklearn.linear_model import RidgeCV
+>>> rcv = RidgeCV(alphas=np.array([.1, .2, .3, .4]))
+>>> rcv.fit(reg_data, reg_target)
+RidgeCV(alphas=array([ 0.1, 0.2, 0.3, 0.4]), cv=None,
+fit_intercept=True, gcv_mode=None, loss_func=None,
+normalize=False, score_func=None, scoring=None,
+store_cv_values=False)
+\end{verbatim}
+\end{framed}
+After we fit the regression, the alpha attribute will be the best alpha choice:
+\begin{framed}
+	\begin{verbatim}
+>>> rcv.alpha_
+0.10000000000000001
+\end{verbatim}
+\end{framed}
+In the previous example, it was the first choice. We might want to hone in on something
+around .1:
+\begin{framed}
+\begin{verbatim}
+>>> rcv2 = RidgeCV(alphas=np.array([.08, .09, .1, .11, .12]))
+>>> rcv2.fit(reg_data, reg_target)
+RidgeCV(alphas=array([ 0.08, 0.09, 0.1 , 0.11, 0.12]), cv=None,
+fit_intercept=True, gcv_mode=None,
+loss_func=None, normalize=False,
+score_func=None, scoring=None,
+store_cv_values=False)
+>>> rcv2.alpha_
+0.08
+\end{verbatim}
+\end{framed}
+We can continue this hunt, but hopefully, the mechanics are clear.
+%========================================================%
+% % Working with Linear Models
+% % 68
+\subsection*{How it works}
+\begin{itemize}
+\item The mechanics might be clear, but we should talk a little more about the why and define what
+was meant by "best". 
+\item  At each step in the cross-validation process, the model scores an error
+against the test sample. 
+\item By default, it's essentially a squared error. 
+
+\end{itemize}
+We can force the \texttt{RidgeCV} object to store the cross-validation values; this will let us visualize
+what it's doing:
+\begin{framed}
+\begin{verbatim}
+>>> alphas_to_test = np.linspace(0.01, 1)
+>>> rcv3 = RidgeCV(alphas=alphas_to_test, store_cv_values=True)
+>>> rcv3.fit(reg_data, reg_target)
+\end{verbatim}
+\end{framed}
+
+As you can see, we test a bunch of points (50 in total) between 0.01 and 1. Since we passed
+\texttt{store\_cv\_values} as true, we can access these values:
+\begin{framed}
+	\begin{verbatim}
+>>> rcv3.cv_values_.shape
+(100, 50)
+\end{verbatim}
+\end{framed}
+
+So, we had 100 values in the initial regression and tested 50 different alpha values. We now
+have access to the errors of all 50 values. So, we can now find the smallest mean error and
+choose it as alpha:
+\begin{framed}
+	\begin{verbatim}
+>>> smallest_idx = rcv3.cv_values_.mean(axis=0).argmin()
+>>> alphas_to_test[smallest_idx]
+\end{verbatim}
+\end{framed}
+
+The question that arises is "\textit{Does RidgeCV agree with our choice}?" 
+
+Use the following command
+to find out:
+\begin{framed}
+	\begin{verbatim}
+>>> rcv3.alpha_
+0.01
+\end{verbatim}
+\end{framed}
+%Beautiful!
+%========================================================%
+%Chapter 2
+%69
+It's also worthwhile to visualize what's going on. In order to do that, we'll plot the mean for all
+50 test alphas.
+\subsection*{Other Remarks}
+If we want to use our own scoring function, we can do that as well. Since we looked up MAD
+before, let's use it to score the differences. First, we need to define our loss function:
+\begin{framed}
+\begin{verbatim}
+>>> def MAD(target, predictions):
+absolute_deviation = np.abs(target - predictions)
+return absolute_deviation.mean()
+\end{verbatim}
+\end{framed}
+\begin{itemize}
+\item After we define the loss function, we can employ the \texttt{make\_scorer} function in sklearn.
+\item This will take care of standardizing our function so that scikit's objects know how to use it.
+\item Also, because this is a loss function and not a score function, the lower the better, and thus
+the need to let sklearn to flip the sign to turn this from a maximization problem into a
+minimization problem:
+\end{itemize}
+
+\begin{framed}
+\begin{verbatim}
+>>> import sklearn
+>>> MAD = sklearn.metrics.make_scorer(MAD, greater_is_better=False)
+>>> rcv4 = RidgeCV(alphas=alphas_to_test, store_cv_values=True,
+scoring=MAD)
+>>> rcv4.fit(reg_data, reg_target)
+>>> smallest_idx = rcv4.cv_values_.mean(axis=0).argmin()
+>>> alphas_to_test[smallest_idx]
+0.2322
+\end{verbatim}
+\end{framed}
+
+%========================================================%
+% % Working with Linear Models
+% % 70
+
+
+\end{document}
